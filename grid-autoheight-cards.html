@@ -1,0 +1,103 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../polymer/lib/utils/render-status.html">
+
+
+<dom-module id="grid-autoheight-cards">
+  <template>
+    <style>
+      :host {
+        display: grid;
+        grid-gap: var(--grid-autoheight-gap, 10px);
+        grid-template-columns: 
+          repeat(auto-fill, minmax(
+            var(--grid-autoheight-card-min-width, 125px), 
+            auto
+          ));
+        grid-auto-rows: var(--grid-autoheight-cards-row-height, 18px);
+        grid-auto-flow: row;
+      }
+      :host ::slotted(*){
+        border: 1px solid black;
+      }
+    </style>
+    <slot></slot>
+  </template>
+
+  <script>
+    /**
+     * `grid-autoheight-cards`
+     * Component providing a Grid Layout with automatic calculation of children height. Similar to Google Keep layout.
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class GridAutoheightCards extends Polymer.Element {
+      static get is() { return 'grid-autoheight-cards'; }
+      static get properties() {
+        return {
+          prop1: {
+            type: String,
+            value: 'grid-autoheight-cards'
+          }
+        };
+      }
+
+      constructor() {
+        super();
+
+        this.timer = null;
+
+        Polymer.RenderStatus.afterNextRender(this, function() {
+          this.__resizeCards();
+        });
+      }
+
+      ready(){
+        super.ready();
+        window.addEventListener('resize', this.__debounceResizing.bind(this));
+      }
+
+      disconnectedCallback(){
+        window.removeEventListener('resize', this.__debounceResizing.bind(this));
+      }
+
+      __debounceResizing(){
+        clearTimeout(this.timer);
+        this.timer = setTimeout(this.__resizeCards.bind(this), 100);
+      }
+
+      __resizeCards(){
+          let gap = parseInt(
+            window.getComputedStyle(this)
+              .getPropertyValue('grid-row-gap')
+              .slice(0,2)
+          );
+          let rowHeight = parseInt(
+            window.getComputedStyle(this)
+              .getPropertyValue('grid-auto-rows')
+              .slice(0,2)
+          );
+          let cardProperties, cardPadding, contentHeight, spanNeeded;
+          Array.from(this.children).forEach((card)=>{
+            //TODO: Handle children margin
+            //TODO: Allow multiple children
+            cardProperties = window.getComputedStyle(card);
+            cardPadding = parseFloat(cardProperties.getPropertyValue('padding-top').slice(0,2))
+              + parseFloat(cardProperties.getPropertyValue('padding-bottom').slice(0,2));
+            contentHeight = parseFloat(card.children[0].offsetHeight) + cardPadding;
+            spanNeeded = contentHeight / rowHeight;
+            if(spanNeeded > 1){
+              spanNeeded = Math.ceil(1 + (contentHeight - rowHeight) / (rowHeight + gap))
+            }else{
+              spanNeeded = 1;
+            }
+            card.style.gridRowEnd = 'span ' + spanNeeded;
+            
+          });
+      }
+    }
+
+    window.customElements.define(GridAutoheightCards.is, GridAutoheightCards);
+  </script>
+</dom-module>
