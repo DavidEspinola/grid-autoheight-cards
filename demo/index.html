@@ -17,7 +17,15 @@
         .card{
           background-color: white;
           border: 1px solid lightgrey;
-          padding: 10%;
+          padding: 10px;
+        }
+
+        grid-autoheight-cards.demo2{
+          --grid-autoheight-cards-min-width: 160px;
+        }
+
+        .card ul{
+          margin-bottom: 0;
         }
       </style>
     </custom-style>
@@ -27,7 +35,7 @@
       <h3>Basic grid-autoheight-cards demo</h3>
       <demo-snippet>
         <template>
-          <grid-autoheight-cards>
+          <grid-autoheight-cards class="demo1">
               <div class="card"><h1>Lorem ipsum</h1><ul><li>Hello</li><li>Hello</li><li>Hello</li></ul></div>
               <div class="card"><span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas volutpat.</span></div>
               <div class="card"><span>Curabitur quam.</span></div>
@@ -53,5 +61,20 @@
         </template>
       </demo-snippet>
     </div>
+    <div class="vertical-section-container centered">
+        <h3>Basic grid-autoheight-cards demo</h3>
+        <demo-snippet>
+          <template>
+            <grid-autoheight-cards class="demo2">
+                <div class="card"><span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas volutpat.</span></div>
+                <div class="card"><span>Curabitur quam.</span></div>
+                <div class="card"><span>Nullam augue sem, luctus vitae.</span></div>
+                <div class="card"><span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas volutpat.</span></div>
+                <div class="card"><span>Curabitur quam.</span></div>
+                <div class="card"><span>Curabitur quam.</span></div>
+            </grid-autoheight-cards>
+          </template>
+        </demo-snippet>
+      </div>
   </body>
 </html>

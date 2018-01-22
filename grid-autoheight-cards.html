@@ -10,17 +10,15 @@
         grid-gap: var(--grid-autoheight-cards-gap, 1rem);
         grid-template-columns: 
           repeat(auto-fill, minmax(
-            var(--grid-autoheight-card-min-width, 125px), 
+            var(--grid-autoheight-cards-min-width, 125px), 
             auto
           ));
         grid-auto-rows: var(--grid-autoheight-cards-row-height, 18px);
         grid-auto-flow: row;
-      }
-      :host ::slotted(*){
-        border: 1px solid black;
+        @apply --grid-autoheight-cards;
       }
     </style>
-    <slot></slot>
+    <slot id="slot"></slot>
   </template>
 
   <script>
@@ -36,66 +34,73 @@
       static get is() { return 'grid-autoheight-cards'; }
       static get properties() {
         return {
-          prop1: {
-            type: String,
-            value: 'grid-autoheight-cards'
+          /** Enables observer for added or removed cards */
+          mutable: {
+            type: Boolean,
+            value: false
           }
         };
       }
 
       constructor() {
         super();
-
         this.timer = null;
-
-        Polymer.RenderStatus.afterNextRender(this, function() {
-          this.__resizeCards();
-          Polymer.RenderStatus.afterNextRender(this, function() {
-            this.__resizeCards();
-          });
-        });
       }
 
       ready(){
         super.ready();
-        window.addEventListener('resize', this.__debounceResizing.bind(this));
+        window.addEventListener('resize', this._debounceResizing.bind(this));
+        
+        this._observer = new Polymer.FlattenedNodesObserver(this.$.slot, (info) => {
+          Polymer.RenderStatus.afterNextRender(this, () => {
+            this.resizeCards();
+          });
+          if(!this.mutable) this._observer.disconnect();
+        });
       }
 
       disconnectedCallback(){
-        window.removeEventListener('resize', this.__debounceResizing.bind(this));
+        window.removeEventListener('resize', this._debounceResizing.bind(this));
       }
 
-      __debounceResizing(){
+      _debounceResizing(){
         clearTimeout(this.timer);
-        this.timer = setTimeout(this.__resizeCards.bind(this), 100);
+        this.timer = setTimeout(this.resizeCards.bind(this), 100);
       }
 
-      __resizeCards(){
+      /**
+      * Method to manually resize all cards inside the grid.
+      *
+      * @return {undefined}.
+      */
+      resizeCards(){
 
           let gridComputedStyle = window.getComputedStyle(this);
-          let gap = this.__getPropertySize(gridComputedStyle, 'grid-row-gap');
-          let rowHeight = this.__getPropertySize(gridComputedStyle, 'grid-auto-rows');
+          let gap = this._getPropertySize(gridComputedStyle, 'grid-row-gap');
+          let rowHeight = this._getPropertySize(gridComputedStyle, 'grid-auto-rows');
 
           let cardComputedStyle, childComputedStyle, cardPadding, contentHeight, childrenHeight, spanNeeded;
 
           Array.from(this.children).forEach((card) => {
-            //TODO: Handle children margin
-            //TODO: Allow multiple children
             cardComputedStyle = window.getComputedStyle(card);
-            cardPadding = this.__getPropertySize(cardComputedStyle, 'padding-top')
-              + this.__getPropertySize(cardComputedStyle, 'padding-bottom');
+            cardPadding = this._getMultiplePropSize(cardComputedStyle, [
+              'padding-top',
+              'padding-bottom'
+            ]);
 
             childrenHeight = 0;
             Array.from(card.children).forEach((child) => {
               childComputedStyle = window.getComputedStyle(child);
-              childrenHeight += child.offsetHeight
-                + this.__getPropertySize(childComputedStyle, 'margin-top')
-                + this.__getPropertySize(childComputedStyle, 'margin-bottom')
+              childrenHeight += child.getBoundingClientRect().height
+                + this._getMultiplePropSize(childComputedStyle, [
+                  'margin-top',
+                  'margin-bottom'
+                ]);
             });
 
             contentHeight = childrenHeight + cardPadding;
-
             spanNeeded = contentHeight / rowHeight;
+
             if(spanNeeded > 1){
               spanNeeded = Math.ceil(1 + (contentHeight - rowHeight) / (rowHeight + gap))
             }else{
@@ -106,18 +111,22 @@
           });
       }
 
-      __getPropertySize(targetComputedStyle, propertyName){
+      _getPropertySize(targetComputedStyle, propertyName){
         return targetComputedStyle
           ? parseFloat(
             targetComputedStyle
                 .getPropertyValue(propertyName)
-                .slice(0,-2) //Remove 'px' from output
+                .slice(0,-2) //Removes 'px' from output
             )
           : 0;
       }
 
-      __calculateCardHeight(card){
-
+      _getMultiplePropSize(targetComputedStyle, properties){
+        let value = 0;
+        properties.forEach((property) => {
+          value += this._getPropertySize(targetComputedStyle, property);
+        })
+        return value;
       }
     }
 
